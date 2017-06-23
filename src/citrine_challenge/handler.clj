@@ -2,16 +2,21 @@
   (:require [compojure.core :refer :all]
             [compojure.handler :as handler]
             [compojure.route :as route]
-            [ring.middleware.json :as middleware]))
+            [ring.middleware.json :as middleware]
+            [citrine-challenge.units :as units]))
 
 (defroutes app-routes
-  (POST "/" request
-    (let [name (or (get-in request [:params :name])
-                   (get-in request [:body :name])
-                    "Morx Gorlont")]
-      {:status 200
-       :body {:name name
-              :desc (str "The I got was " name)}}))
+  (GET "/units" request
+    (if-let [name (or (get-in request [:params :name])
+                   (get-in request [:body :name]))]
+      (if-let [matched-unit (get units/si (str name))]
+        {:status 200
+         :body {:desc (str "The unit requested was " name)
+              :si_equivalent (get units/si (str name))}}
+        {:status 404
+         :body {:message (str "The unit " name " is not supported")}})
+      {:status 404
+        :body {:message "That unit is not supported"}}))
   (route/not-found "Not Found"))
 
 (def app
