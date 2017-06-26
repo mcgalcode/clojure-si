@@ -3,18 +3,18 @@
             [compojure.handler :as handler]
             [compojure.route :as route]
             [ring.middleware.json :as middleware]
-            [citrine-challenge.units :as units]))
+            [citrine-challenge.parser :as parser]))
 
 (defroutes app-routes
   (GET "/units" request
-    (if-let [name (or (get-in request [:params :name])
-                   (get-in request [:body :name]))]
-      (if-let [matched-unit (get units/si (str name))]
+    (if-let [unit_string_expr (or (get-in request [:params :unit_string_expr])
+                   (get-in request [:body :unit_string_expr]))]
+      (if-let [matched-unit (get units/si (str unit_string_expr))]
         {:status 200
-         :body {:desc (str "The unit requested was " name)
-              :si_equivalent (get units/si (str name))}}
+         :body {:desc (str "The unit requested was " unit_string_expr)
+              :si_equivalent ( (str unit_string_expr))}}
         {:status 404
-         :body {:message (str "The unit " name " is not supported")}})
+         :body {:message (str "The unit " unit_string_expr " is not supported")}})
       {:status 404
         :body {:message "That unit is not supported"}}))
   (route/not-found "Not Found"))
