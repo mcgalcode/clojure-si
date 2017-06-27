@@ -61,7 +61,7 @@
   (or (is-valid-unit? arg)
       (is-valid-operator? arg)))
 
-(defn is-valid-input?
+(defn string-contents-valid?
   [input-str]
   (every? is-valid-op-or-unit? (get-unit-op-vec input-str)))
 
@@ -149,8 +149,32 @@
 (defn get-conversion
   [input-str]
   { 
-    :si-equivalent {
-      :name-string (make-si-unit-name-string input-str)
-      :multiplier (calculate-si-unit-multiplier input-str)
-    }
+    :name-string (make-si-unit-name-string input-str)
+    :multiplier (calculate-si-unit-multiplier input-str)
   })
+
+(defn has-balanced-parentheses?
+  [input-str]
+  (loop [remaining-vec (get-unit-op-vec input-str)
+         paren-count 0]
+    (cond
+      (< paren-count 0) false
+      (= (count remaining-vec) 0)
+        (cond
+          (not (= paren-count 0)) false
+          :else true)
+      :else
+        (cond
+          (= (first remaining-vec) "(")
+            (recur (rest remaining-vec)
+              (inc paren-count))
+          (= (first remaining-vec) ")")
+            (recur (rest remaining-vec)
+              (dec paren-count))
+          :else (recur (rest remaining-vec)
+              paren-count)))))
+
+(defn is-valid-input?
+  [input-str]
+  (and (has-balanced-parentheses? input-str)
+    (string-contents-valid? input-str)))

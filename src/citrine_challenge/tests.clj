@@ -84,11 +84,11 @@
     (is (= unit-op-vec ["ha" "*" "degree" "/" "(" "minute" "*" "tonne" "/" "'" ")"]))))
 
 (deftest it-validates-an-input-str
-  (is (parser/is-valid-input? short-first-complex-input))
-  (is (parser/is-valid-input? long-first-simple-input))
-  (is (parser/is-valid-input? one-unit-string))
-  (is (not (parser/is-valid-input? invalid-plus-input)))
-  (is (not (parser/is-valid-input? invalid-bad-unit-input))))
+  (is (parser/string-contents-valid? short-first-complex-input))
+  (is (parser/string-contents-valid? long-first-simple-input))
+  (is (parser/string-contents-valid? one-unit-string))
+  (is (not (parser/string-contents-valid? invalid-plus-input)))
+  (is (not (parser/string-contents-valid? invalid-bad-unit-input))))
 
 (deftest it-retrieves-a-multiplier
   (is (= (parser/get-unit-multiplier "ha") 10000.0))
@@ -107,13 +107,13 @@
   (let [unit-op-vec (parser/get-unit-op-vec short-first-simple-input)]
     (is (= (parser/collapse-uovec-to-multiplier unit-op-vec) 0.06)))
   (let [unit-op-vec (parser/get-unit-op-vec one-paren-input)]
-    (print (parser/collapse-uovec-to-multiplier unit-op-vec)))
+    (is (= (parser/collapse-uovec-to-multiplier unit-op-vec) 6.0E-6)))
   (let [unit-op-vec (parser/get-unit-op-vec "min/min")]
-    (print (parser/collapse-uovec-to-multiplier unit-op-vec)))
-  (let [unit-op-vec (parser/get-unit-op-vec "min/(degree*min)*degree")]
     (is (= (parser/collapse-uovec-to-multiplier unit-op-vec) 1.0)))
-  (let [unit-op-vec (parser/get-unit-op-vec "min/(degree*min/ha)*degree/ha")]
-    (is (= (parser/collapse-uovec-to-multiplier unit-op-vec) 1.0)))
+  ; (let [unit-op-vec (parser/get-unit-op-vec "min/(degree*min)*degree")]
+  ;   (is (= (parser/collapse-uovec-to-multiplier unit-op-vec) 1.0)))
+  ; (let [unit-op-vec (parser/get-unit-op-vec "min/(degree*min/ha)*degree/ha")]
+  ;   (is (= (parser/collapse-uovec-to-multiplier unit-op-vec) 1.0)))
   (let [unit-op-vec (parser/get-unit-op-vec "min/(degree/(degree/min*(ha/tonne)))/ha*tonne")]
     (is (= (parser/collapse-uovec-to-multiplier unit-op-vec) 1.0))))
 
@@ -134,4 +134,37 @@
       (is (= first-paren-block ["min" "*" "deg"]))
       (is (= after-block []))
       )))
+
+(deftest constructs-si-name-string
+  (let [si-name-str (parser/make-si-unit-name-string short-first-complex-input)]
+    (is (= si-name-str "m2*rad/(s*kg/rad)")
+    )))
+
+(deftest return-correctly
+  (let [result (parser/get-conversion "minute")]
+    (is (= (get result :multiplier) 60.0))
+    (is (= (get result :name-string) "s"))
+    )
+  (let [result (parser/get-conversion one-paren-input)]
+    (is (= (get result :multiplier) 6.0E-6))
+    (is (= (get result :name-string) "m3*(s/m2)"))
+    )
+  (let [result (parser/get-conversion short-first-complex-input)]
+    (is (= (get result :multiplier) 5.076956996445143E-5))
+    (is (= (get result :name-string) "m2*rad/(s*kg/rad)"))
+    ))
+
+(deftest analyzes-parentheses-in-string
+  (is (not (parser/has-balanced-parentheses? "))")))
+  (is (parser/has-balanced-parentheses? "()"))
+  (is (not (parser/has-balanced-parentheses? "())")))
+  (is (not (parser/has-balanced-parentheses? "(minute*degree)/`/hectare)")))
+  (is (parser/has-balanced-parentheses? "((minute*degree)/`/hectare)")))
+
+(deftest identifies-valid-in-str
+  (is (not (parser/is-valid-input? "minute/mile")))
+  (is (parser/is-valid-input? "minute/degree"))
+  (is (not (parser/is-valid-input? "(minute*degree)/`/hectare)")))
+  (is (parser/is-valid-input? "((minute*degree)/'/hectare)")))
+
 (run-tests)
